@@ -6,9 +6,38 @@ library(rgdal)
 library(maptools)
 
 # Loading data from the website
-u <- "http://opendata.dc.gov/datasets/bda20763840448b58f8383bae800a843_26.geojson?"
-downloader::download(url = u, destfile = "/crime.GeoJSON")
-dcMap2 <- readOGR(dsn = "/crime.GeoJSON", layer = "OGRGeoJSON")
+addy="http://opendata.dc.gov/datasets/bda20763840448b58f8383bae800a843_26.geojson?"
+crime.json <- fromJSON(addy, simplify=TRUE)
+
+#Post extraction from JSON do summary() on list (crime.json) to identify the node for extraction
+tmp <-crime.json[['features']]
+
+#Data extraction functions
+grabInfoA<-function(val){
+  l<- length(tmp[[1]][[val]])
+  tmp<-lapply(1:l, function(y) 
+    sapply(tmp, function(x){
+      if(!is.null(x[[val]][[y]])){
+        return(x[[val]][[y]])
+      }else{
+        return(NA)
+      }}))}
+grabInfoB<-function(val,val2){
+  l<- length(tmp[[1]][[val]][[val2]])
+  tmp<-lapply(1:l, function(y) 
+    sapply(tmp, function(x){
+      if(!is.null(x[[val]][[val2]][[y]])){
+        return(x[[val]][[val2]][[y]])
+      }else{
+        return(NA)
+      }}))}
+
+#Pulling data out of nested list and combining into a data frame
+a<-data.frame(grabInfoA(2))
+b<-data.frame(grabInfoB(3,2))
+names(a)<-names(tmp[[1]]$properties)
+names(b)<-c("coords.x1","coords.x2")
+dcMap2 <- cbind(a,b)
 
 #extrating the last modified date
 lMod <- format(as.Date(as.POSIXlt(dcMap2$LASTMODIFIEDDATE[1])), format="%B %d, %Y") 
